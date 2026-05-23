@@ -47,7 +47,7 @@ exports.getUserProgress = async (req, res) => {
     );
     const averageScore = avgStats[0].avg_score ? parseFloat(parseFloat(avgStats[0].avg_score).toFixed(2)) : 0.0;
 
-    // 4. Overall Progress percentage (excluding English)
+    // 4. Overall Progress percentage (prefer non-English languages, but fall back to any language if needed)
     const [progressStats] = await db.query(
       `SELECT AVG(s.progress_percentage) as avg_progress 
        FROM Scores s 
@@ -55,7 +55,19 @@ exports.getUserProgress = async (req, res) => {
        WHERE s.user_id = ? AND LOWER(l.language_name) != 'english'`,
       [user_id]
     );
-    const overallProgress = progressStats[0].avg_progress ? parseFloat(parseFloat(progressStats[0].avg_progress).toFixed(2)) : 0.0;
+    let overallProgress = progressStats[0].avg_progress;
+
+    if (overallProgress === null || overallProgress === undefined) {
+      const [fallbackProgress] = await db.query(
+        `SELECT AVG(progress_percentage) as avg_progress 
+         FROM Scores 
+         WHERE user_id = ?`,
+        [user_id]
+      );
+      overallProgress = fallbackProgress[0].avg_progress;
+    }
+
+    overallProgress = overallProgress ? parseFloat(parseFloat(overallProgress).toFixed(2)) : 0.0;
 
     // 5. Language-wise performance details (excluding English)
     const [languagePerformance] = await db.query(

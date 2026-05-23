@@ -162,12 +162,15 @@ async function ensureMysqlDailyChallengeTable() {
     }
 
     const [lastClaimedColumn] = await mysqlPool.query("SHOW COLUMNS FROM DailyChallenge LIKE 'last_claimed_at'");
+    const [claimedDateColumn] = await mysqlPool.query("SHOW COLUMNS FROM DailyChallenge LIKE 'claimed_date'");
+
     if (lastClaimedColumn.length === 0) {
       await mysqlPool.query('ALTER TABLE DailyChallenge ADD COLUMN last_claimed_at DATETIME NULL');
-      const [claimedDateColumn] = await mysqlPool.query("SHOW COLUMNS FROM DailyChallenge LIKE 'claimed_date'");
-      if (claimedDateColumn.length > 0) {
-        await mysqlPool.query('UPDATE DailyChallenge SET last_claimed_at = claimed_date');
-      }
+    }
+
+    if (claimedDateColumn.length > 0) {
+      await mysqlPool.query('UPDATE DailyChallenge SET last_claimed_at = claimed_date WHERE last_claimed_at IS NULL');
+      await mysqlPool.query('ALTER TABLE DailyChallenge MODIFY COLUMN claimed_date DATETIME NULL DEFAULT NULL');
     }
   } catch (err) {
     console.error('[Database ERROR] Could not ensure DailyChallenge table:', err.message);
