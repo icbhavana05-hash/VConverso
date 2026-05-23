@@ -22,10 +22,10 @@ const Navbar = () => {
       <div className="container">
         {/* Brand logo */}
         <Link className="navbar-brand d-flex align-items-center fw-bold fs-4" to={user ? "/dashboard" : "/login"}>
-          <span className="bg-glow-primary p-2 rounded-3 me-2 d-inline-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px' }}>
+          <span className="p-2 rounded-3 me-2 d-inline-flex align-items-center justify-content-center" style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg, var(--color-brown-dark) 0%, var(--color-brown-med) 100%)', boxShadow: '0 4px 10px rgba(107, 62, 46, 0.15)' }}>
             <i className="bi bi-translate text-white fs-5"></i>
           </span>
-          <span className="fw-bold" style={{ color: '#291C0E' }}>VConverso</span>
+          <span className="fw-bold" style={{ color: 'var(--color-brown-dark)' }}>VConverso</span>
         </Link>
 
         {/* Hamburger Toggle */}
@@ -64,8 +64,8 @@ const Navbar = () => {
           <div className="d-flex align-items-center">
             {user ? (
               <div className="d-flex align-items-center gap-3">
-                <span className="d-none d-md-inline-block" style={{ color: '#291C0E' }}>
-                  <i className="bi bi-person-circle me-2" style={{ color: '#6E4738' }}></i>
+                <span className="d-none d-md-inline-block" style={{ color: 'var(--text-prim)' }}>
+                  <i className="bi bi-person-circle me-2" style={{ color: 'var(--color-brown-med)' }}></i>
                   Hi, <span className="fw-semibold">{user.name}</span>
                 </span>
                 <button 

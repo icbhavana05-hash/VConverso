@@ -6,7 +6,7 @@ const db = require('../config/db');
  */
 exports.getLanguages = async (req, res) => {
   try {
-    const [languages] = await db.query('SELECT * FROM Language ORDER BY language_id ASC');
+    const [languages] = await db.query("SELECT * FROM Language WHERE LOWER(language_name) != 'english' ORDER BY language_id ASC");
     res.status(200).json({
       success: true,
       languages

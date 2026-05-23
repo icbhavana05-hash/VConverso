@@ -31,10 +31,10 @@ const NotesPage = () => {
   if (loading) {
     return (
       <div className="container py-5 text-center mt-5">
-        <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+        <div className="spinner-border" role="status" style={{ width: '3rem', height: '3rem', borderColor: 'var(--color-brown-dark)', borderRightColor: 'transparent' }}>
           <span className="visually-hidden">Loading notes...</span>
         </div>
-        <p className="text-secondary mt-3 fs-5">Fetching notes and study guides...</p>
+        <p className="mt-3 fs-5" style={{ color: 'var(--text-sec)' }}>Fetching notes and study guides...</p>
       </div>
     );
   }
@@ -44,8 +44,8 @@ const NotesPage = () => {
       <div className="container py-5 mt-4">
         <div className="alert alert-danger border-0 rounded-4 p-4 text-center glass-panel animate-fade-in" role="alert">
           <i className="bi bi-file-earmark-x text-danger fs-1 mb-3 d-block"></i>
-          <h4 className="fw-bold text-white">Study Notes Unavailable</h4>
-          <p className="text-secondary mb-4">{error}</p>
+          <h4 className="fw-bold" style={{ color: 'var(--color-brown-dark)' }}>Study Notes Unavailable</h4>
+          <p className="mb-4" style={{ color: 'var(--text-sec)' }}>{error}</p>
           <button onClick={() => navigate(-1)} className="btn btn-premium-primary">
             Go Back
           </button>
@@ -63,24 +63,24 @@ const NotesPage = () => {
       .map((line, idx) => {
         // Bullet points
         if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-          return <li key={idx} className="text-secondary mb-2 ms-3">{line.replace(/^[-*]\s+/, '')}</li>;
+          return <li key={idx} className="mb-2 ms-3" style={{ color: 'var(--text-sec)' }}>{line.replace(/^[-*]\s+/, '')}</li>;
         }
         // Bold tags: **text**
         if (line.includes('**')) {
           // simple bold replacement
           const parts = line.split('**');
           return (
-            <p key={idx} className="text-secondary mb-3 leading-relaxed">
-              {parts.map((part, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} className="text-white">{part}</strong> : part)}
+            <p key={idx} className="mb-3 leading-relaxed" style={{ color: 'var(--text-sec)' }}>
+              {parts.map((part, pIdx) => pIdx % 2 === 1 ? <strong key={pIdx} style={{ color: 'var(--color-brown-dark)', fontWeight: '700' }}>{part}</strong> : part)}
             </p>
           );
         }
         // Headings: ###
         if (line.trim().startsWith('###')) {
-          return <h4 key={idx} className="fw-bold text-white mt-4 mb-3">{line.replace(/^###\s+/, '')}</h4>;
+          return <h4 key={idx} className="fw-bold mt-4 mb-3" style={{ color: 'var(--color-brown-dark)' }}>{line.replace(/^###\s+/, '')}</h4>;
         }
         if (line.trim().startsWith('##')) {
-          return <h3 key={idx} className="fw-bold text-white mt-4 mb-3 fs-4">{line.replace(/^##\s+/, '')}</h3>;
+          return <h3 key={idx} className="fw-bold mt-4 mb-3 fs-4" style={{ color: 'var(--color-brown-dark)' }}>{line.replace(/^##\s+/, '')}</h3>;
         }
         // Table or other blocks
         if (line.trim().startsWith('|')) {
@@ -88,15 +88,15 @@ const NotesPage = () => {
           const columns = line.split('|').map(c => c.trim()).filter(c => c !== '');
           if (line.includes('---')) return null; // skip separator
           return (
-            <div key={idx} className="row border-bottom border-secondary py-2 g-0" style={{ background: 'rgba(255,255,255,0.02)' }}>
+            <div key={idx} className="row border-bottom py-2 g-0" style={{ borderColor: 'rgba(107, 62, 46, 0.08)', background: 'var(--bg-sec)' }}>
               {columns.map((col, colIdx) => (
-                <div key={colIdx} className="col text-secondary px-3 small">{col}</div>
+                <div key={colIdx} className="col px-3 small font-semibold" style={{ color: 'var(--text-sec)' }}>{col}</div>
               ))}
             </div>
           );
         }
         
-        return line.trim() === '' ? <br key={idx} /> : <p key={idx} className="text-secondary mb-3 leading-relaxed">{line}</p>;
+        return line.trim() === '' ? <br key={idx} /> : <p key={idx} className="mb-3 leading-relaxed" style={{ color: 'var(--text-sec)' }}>{line}</p>;
       });
   };
 
@@ -106,7 +106,8 @@ const NotesPage = () => {
       <div className="mb-4">
         <button 
           onClick={() => navigate(`/topics/${topic?.language_id}`)}
-          className="btn btn-link text-secondary text-decoration-none d-inline-flex align-items-center gap-1 hover-opacity p-0 border-0"
+          className="btn btn-link text-decoration-none d-inline-flex align-items-center gap-2 hover-opacity p-0 border-0 font-semibold"
+          style={{ color: 'var(--text-sec)', transition: 'color 0.2s' }}
         >
           <i className="bi bi-arrow-left"></i> Back to Syllabus
         </button>
@@ -117,12 +118,12 @@ const NotesPage = () => {
         <div className="col-lg-8">
           <div className="glass-panel p-4 p-md-5">
             {/* Header info */}
-            <div className="border-bottom border-secondary pb-4 mb-4">
-              <span className="text-primary fw-bold text-uppercase tracking-wider small d-block mb-1">
+            <div className="border-bottom pb-4 mb-4" style={{ borderColor: 'rgba(107, 62, 46, 0.08)' }}>
+              <span className="fw-bold text-uppercase tracking-wider small d-block mb-1" style={{ color: 'var(--color-brown-med)' }}>
                 {topic?.language_name} Grammar Laboratory
               </span>
-              <h1 className="fw-bold text-white mb-2">{topic?.topic_name}</h1>
-              <p className="text-secondary mb-0 small">
+              <h1 className="fw-bold mb-2" style={{ color: 'var(--color-brown-dark)' }}>{topic?.topic_name}</h1>
+              <p className="mb-0 small" style={{ color: 'var(--text-sec)' }}>
                 <i className="bi bi-book-half me-1"></i> Interactive Study Material
               </p>
             </div>
@@ -130,20 +131,20 @@ const NotesPage = () => {
             {/* Render Notes */}
             {notes.length === 0 ? (
               <div className="text-center py-5">
-                <i className="bi bi-file-earmark-text text-secondary fs-1 mb-3 d-block"></i>
-                <h5 className="text-white">Content Preparing</h5>
-                <p className="text-secondary">Study notes for this topic are being formatted by our linguists. Check back soon!</p>
+                <i className="bi bi-file-earmark-text fs-1 mb-3 d-block" style={{ color: 'var(--text-muted)' }}></i>
+                <h5 className="fw-bold" style={{ color: 'var(--color-brown-dark)' }}>Content Preparing</h5>
+                <p style={{ color: 'var(--text-sec)' }}>Study notes for this topic are being formatted by our linguists. Check back soon!</p>
               </div>
             ) : (
               notes.map((note) => (
                 <article className="mb-5" key={note.note_id}>
-                  <h2 className="h3 fw-bold text-white mb-4 d-flex align-items-center gap-2">
-                    <span className="bg-glow-primary p-1.5 rounded-3 d-inline-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px' }}>
-                      <i className="bi bi-journal-text text-white fs-6"></i>
+                  <h2 className="h3 fw-bold mb-4 d-flex align-items-center gap-2" style={{ color: 'var(--color-brown-dark)' }}>
+                    <span className="p-1.5 rounded-3 d-inline-flex align-items-center justify-content-center" style={{ width: '32px', height: '32px', background: 'var(--bg-sec)', border: '1px solid var(--card-border)', color: 'var(--color-brown-dark)' }}>
+                      <i className="bi bi-journal-text fs-6"></i>
                     </span>
                     {note.title}
                   </h2>
-                  <div className="fs-6 lh-lg text-secondary">
+                  <div className="fs-6 lh-lg">
                     {renderFormattedContent(note.content)}
                   </div>
                 </article>
@@ -151,7 +152,7 @@ const NotesPage = () => {
             )}
 
             {/* Bottom Navigator */}
-            <div className="border-top border-secondary pt-4 mt-5 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+            <div className="border-top pt-4 mt-5 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3" style={{ borderColor: 'rgba(107, 62, 46, 0.08)' }}>
               <button 
                 onClick={() => navigate(`/topics/${topic?.language_id}`)}
                 className="btn btn-premium-secondary w-100 w-sm-auto py-2.5 px-4"
@@ -172,34 +173,34 @@ const NotesPage = () => {
         {/* Sidebar reference guides */}
         <div className="col-lg-4">
           <div className="glass-panel p-4 mb-4">
-            <h4 className="fw-bold text-white mb-3 d-flex align-items-center gap-2 fs-5">
-              <i className="bi bi-shield-check text-primary"></i> Learning Tips
+            <h4 className="fw-bold mb-3 d-flex align-items-center gap-2 fs-5" style={{ color: 'var(--color-brown-dark)' }}>
+              <i className="bi bi-shield-check" style={{ color: 'var(--color-brown-med)' }}></i> Learning Tips
             </h4>
             <ul className="list-unstyled mb-0 d-flex flex-column gap-3">
-              <li className="d-flex align-items-start gap-2.5 small text-secondary">
-                <i className="bi bi-check-circle-fill text-success mt-0.5" style={{ flexShrink: 0 }}></i>
+              <li className="d-flex align-items-start gap-2.5 small" style={{ color: 'var(--text-sec)' }}>
+                <i className="bi bi-check-circle-fill mt-0.5" style={{ flexShrink: 0, color: 'var(--color-brown-med)' }}></i>
                 <span><strong>Read out loud:</strong> Vocalizing foreign tenses helps muscle memory and pronunciation.</span>
               </li>
-              <li className="d-flex align-items-start gap-2.5 small text-secondary">
-                <i className="bi bi-check-circle-fill text-success mt-0.5" style={{ flexShrink: 0 }}></i>
+              <li className="d-flex align-items-start gap-2.5 small" style={{ color: 'var(--text-sec)' }}>
+                <i className="bi bi-check-circle-fill mt-0.5" style={{ flexShrink: 0, color: 'var(--color-brown-med)' }}></i>
                 <span><strong>Write conjugation drills:</strong> Penning the tables improves memorization by 40%.</span>
               </li>
-              <li className="d-flex align-items-start gap-2.5 small text-secondary">
-                <i className="bi bi-check-circle-fill text-success mt-0.5" style={{ flexShrink: 0 }}></i>
+              <li className="d-flex align-items-start gap-2.5 small" style={{ color: 'var(--text-sec)' }}>
+                <i className="bi bi-check-circle-fill mt-0.5" style={{ flexShrink: 0, color: 'var(--color-brown-med)' }}></i>
                 <span><strong>Review wrong answers:</strong> The quiz at the end provides instant correction guidelines.</span>
               </li>
             </ul>
           </div>
 
-          <div className="glass-panel p-4 text-center bg-glow-primary overflow-hidden position-relative" style={{ border: 'none' }}>
+          <div className="glass-panel p-4 text-center overflow-hidden position-relative" style={{ background: 'linear-gradient(135deg, var(--color-brown-dark) 0%, var(--color-brown-med) 100%)', border: 'none' }}>
             <div className="position-relative z-1">
-              <i className="bi bi-trophy-fill text-warning display-4 mb-3 d-block" style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.3))' }}></i>
-              <h4 className="fw-bold text-white mb-2 fs-5">Ready for the Quiz?</h4>
-              <p className="text-white-50 small mb-4">Challenge yourself! Finish this module's diagnostic evaluation to update your scoreboard.</p>
+              <i className="bi bi-trophy-fill text-warning display-4 mb-3 d-block" style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.15))' }}></i>
+              <h4 className="fw-bold mb-2 fs-5" style={{ color: '#FFFFFF' }}>Ready for the Quiz?</h4>
+              <p className="small mb-4" style={{ color: 'rgba(255, 255, 255, 0.85)' }}>Challenge yourself! Finish this module's diagnostic evaluation to update your scoreboard.</p>
               <button 
                 onClick={() => navigate(`/quiz/${topic_id}`)}
                 className="btn btn-light fw-bold w-100 py-2.5 rounded-3"
-                style={{ color: '#6E4738' }}
+                style={{ color: 'var(--color-brown-dark)', background: '#FFFFFF', border: 'none' }}
               >
                 Launch Assessment
               </button>

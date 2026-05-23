@@ -21,30 +21,43 @@ exports.getUserProgress = async (req, res) => {
       });
     }
 
-    // 2. Total quizzes attempted (unique quizzes) & Total attempts count
+    // 2. Total quizzes attempted (unique quizzes) & Total attempts count (excluding English)
     const [attemptStats] = await db.query(
-      'SELECT COUNT(*) as total_attempts, COUNT(DISTINCT quiz_id) as unique_quizzes FROM Attempts WHERE user_id = ?',
+      `SELECT COUNT(a.attempt_id) as total_attempts, COUNT(DISTINCT a.quiz_id) as unique_quizzes 
+       FROM Attempts a 
+       JOIN Quizzes q ON a.quiz_id = q.quiz_id
+       JOIN Topics t ON q.topic_id = t.topic_id
+       JOIN Language l ON t.language_id = l.language_id
+       WHERE a.user_id = ? AND LOWER(l.language_name) != 'english'`,
       [user_id]
     );
 
     const totalAttempts = attemptStats[0].total_attempts || 0;
     const uniqueQuizzesAttempted = attemptStats[0].unique_quizzes || 0;
 
-    // 3. Average score across all attempts
+    // 3. Average score across all attempts (excluding English)
     const [avgStats] = await db.query(
-      'SELECT AVG(score) as avg_score FROM Attempts WHERE user_id = ?',
+      `SELECT AVG(a.score) as avg_score 
+       FROM Attempts a 
+       JOIN Quizzes q ON a.quiz_id = q.quiz_id
+       JOIN Topics t ON q.topic_id = t.topic_id
+       JOIN Language l ON t.language_id = l.language_id
+       WHERE a.user_id = ? AND LOWER(l.language_name) != 'english'`,
       [user_id]
     );
     const averageScore = avgStats[0].avg_score ? parseFloat(parseFloat(avgStats[0].avg_score).toFixed(2)) : 0.0;
 
-    // 4. Overall Progress percentage (Average progress across all languages)
+    // 4. Overall Progress percentage (excluding English)
     const [progressStats] = await db.query(
-      'SELECT AVG(progress_percentage) as avg_progress FROM Scores WHERE user_id = ?',
+      `SELECT AVG(s.progress_percentage) as avg_progress 
+       FROM Scores s 
+       JOIN Language l ON s.language_id = l.language_id
+       WHERE s.user_id = ? AND LOWER(l.language_name) != 'english'`,
       [user_id]
     );
     const overallProgress = progressStats[0].avg_progress ? parseFloat(parseFloat(progressStats[0].avg_progress).toFixed(2)) : 0.0;
 
-    // 5. Language-wise performance details
+    // 5. Language-wise performance details (excluding English)
     const [languagePerformance] = await db.query(
       `SELECT 
         l.language_id, 
@@ -55,11 +68,12 @@ exports.getUserProgress = async (req, res) => {
         (CASE WHEN s.user_id IS NOT NULL THEN 1 ELSE 0 END) as enrolled
       FROM Language l 
       LEFT JOIN Scores s ON l.language_id = s.language_id AND s.user_id = ?
+      WHERE LOWER(l.language_name) != 'english'
       ORDER BY l.language_id ASC`,
       [user_id]
     );
 
-    // 6. Recent quiz attempts (Bonus for premium UI: display recent activities)
+    // 6. Recent quiz attempts (excluding English)
     const [recentAttempts] = await db.query(
       `SELECT 
         a.attempt_id, 
@@ -72,7 +86,7 @@ exports.getUserProgress = async (req, res) => {
       JOIN Quizzes q ON a.quiz_id = q.quiz_id 
       JOIN Topics t ON q.topic_id = t.topic_id 
       JOIN Language l ON t.language_id = l.language_id 
-      WHERE a.user_id = ? 
+      WHERE a.user_id = ? AND LOWER(l.language_name) != 'english'
       ORDER BY a.attempt_date DESC 
       LIMIT 5`,
       [user_id]

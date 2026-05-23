@@ -180,26 +180,3 @@ INSERT INTO Qs (question_id, quiz_id, question_text, option_a, option_b, option_
 (18, 6, 'What does "Die Rechnung, bitte" mean?', 'Where is the station?', 'The bill, please', 'I would like a drink', 'Good morning', 'B');
 
 
--- Inserting Topics for Spanish (Language 4)
-INSERT INTO Topics (topic_id, language_id, topic_name, topic_description) VALUES
-(7, 4, 'Present Tense Verb Conjugation', 'Master regular verb conjugations for -AR, -ER, and -IR verbs in the present tense.'),
-(8, 4, 'Essential Travel Spanish', 'Acquire key phrases to ask for directions, purchase tickets, and handle hotel reservations.');
-
--- Notes for Spanish Topics
-INSERT INTO Notes (note_id, topic_id, title, content) VALUES
-(7, 7, 'Conjugating Regular Spanish Verbs in Present Tense', 'In Spanish, verbs are categorized by their endings: **-ar**, **-er**, or **-ir**. To conjugate them in the present tense, drop the ending and add the appropriate suffix matching the subject pronoun.\n\n### Subject Pronouns:\n- *Yo* (I), *Tú* (You, informal), *Él/Ella/Usted* (He/She/You, formal)\n- *Nosotros* (We), *Ellos/Ellas/Ustedes* (They/You all)\n\n### Suffixes for Present Tense:\n\n| Subject | -AR verbs (e.g., Hablar) | -ER verbs (e.g., Comer) | -IR verbs (e.g., Vivir) |\n|---|---|---|---|\n| Yo | -o (*hablo*) | -o (*como*) | -o (*vivo*) |\n| Tú | -as (*hablas*) | -es (*comes*) | -es (*vives*) |\n| Él / Ella / Ud. | -a (*habla*) | -e (*come*) | -e (*vive*) |\n| Nosotros | -amos (*hablamos*) | -emos (*comemos*) | -imos (*vivimos*) |\n| Ellos / Ellas / Uds. | -an (*hablan*) | -en (*comen*) | -en (*viven*) |'),
-(8, 8, 'Survival Spanish for Travel', 'Traveling in Spain or Latin America is much richer when you can communicate directly. Here are essential travel scripts.\n\n### Getting Directions\n- **¿Dónde está...?**: Where is...?\n  - *Example*: *¿Dónde está la estación de tren?* (Where is the train station?)\n- **Derecha / Izquierda**: Right / Left\n- **Todo recto**: Straight ahead\n\n### Purchasing & Prices\n- **¿Cuánto cuesta esto?**: How much does this cost?\n- **Quiero un billete para...**: I want a ticket to...\n- **¿Tienen habitaciones libres?**: Do you have free rooms?\n- **La cuenta, por favor**: The bill, please (used in restaurants).');
-
--- Quizzes for Spanish Topics
-INSERT INTO Quizzes (quiz_id, topic_id, quiz_title, total_marks) VALUES
-(7, 7, 'Spanish Verb Conjugation Quiz', 3),
-(8, 8, 'Travel Spanish & Directions Quiz', 3);
-
--- Questions for Spanish Quizzes
-INSERT INTO Qs (question_id, quiz_id, question_text, option_a, option_b, option_c, option_d, correct_answer) VALUES
-(19, 7, 'What is the correct conjugation of "comer" (to eat) for "Nosotros" (we)?', 'como', 'comemos', 'comen', 'comes', 'B'),
-(20, 7, 'Which ending is used for a "Yo" (I) subject in regular -AR, -ER, and -IR verbs alike?', '-a', '-es', '-o', '-emos', 'C'),
-(21, 7, 'Conjugate "hablar" (to speak) for "Tú" (you, informal):', 'hablo', 'habla', 'hablan', 'hablas', 'D'),
-(22, 8, 'What is the Spanish translation for "Where is the train station?"', '¿Cuánto cuesta el tren?', '¿Dónde está la estación de tren?', 'Quiero un billete de tren.', '¿Tiene un tren?', 'B'),
-(23, 8, 'How do you ask for the bill in a Spanish restaurant?', 'La cuenta, por favor', '¿Cuánto cuesta?', 'Hola, por favor', 'Mucho gusto', 'A'),
-(24, 8, 'Which word means "Left" in Spanish?', 'Derecha', 'Todo recto', 'Izquierda', 'Estación', 'C');

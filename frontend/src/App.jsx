@@ -67,9 +67,9 @@ const FooterWithRouteCheck = () => {
   }
 
   return (
-    <footer className="py-4 text-center mt-auto border-top border-secondary" style={{ background: 'rgba(15, 23, 42, 0.4)', borderColor: 'rgba(255, 255, 255, 0.05)' }}>
+    <footer className="py-4 text-center mt-auto border-top" style={{ background: 'var(--bg-navbar)', borderColor: 'rgba(107, 62, 46, 0.08)' }}>
       <div className="container">
-        <p className="text-secondary small mb-0">
+        <p className="small mb-0" style={{ color: 'var(--text-muted)' }}>
           &copy; {new Date().getFullYear()} VConverso Language Learning Management System. Built for DBMS + Full Stack Project evaluation.
         </p>
       </div>
@@ -121,7 +121,11 @@ function AppContent() {
           {/* Welcome Page Route */}
           <Route 
             path="/welcome" 
-            element={<WelcomePage />} 
+            element={
+              <PrivateRoute>
+                <WelcomePage />
+              </PrivateRoute>
+            } 
           />
           
           {/* Private Learner Routes */}
