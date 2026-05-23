@@ -94,6 +94,17 @@ CREATE TABLE IF NOT EXISTS Scores (
     UNIQUE KEY user_language (user_id, language_id)
 );
 
+-- 10. DailyChallenge Table
+CREATE TABLE IF NOT EXISTS DailyChallenge (
+    challenge_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    total_bonus_xp INT NOT NULL DEFAULT 0,
+    last_claimed_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+    UNIQUE KEY user_unique (user_id)
+);
+
 -- --------------------------------------------------------
 -- SAMPLE DATA INSERTION
 -- --------------------------------------------------------

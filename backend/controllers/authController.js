@@ -206,6 +206,19 @@ exports.googleAuth = async (req, res) => {
     });
   } catch (err) {
     console.error('[Google Auth Error]:', err.message);
-    res.status(500).json({ success: false, message: 'Google authentication failed' });
+    console.error('[Google Auth Error Stack]:', err.stack);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Google authentication failed';
+    
+    if (err.message.includes('invalid_grant')) {
+      errorMessage = 'Invalid or expired Google token';
+    } else if (err.message.includes('audience')) {
+      errorMessage = 'Token audience mismatch - verify your Google Client ID';
+    } else if (err.message.includes('could not determine')) {
+      errorMessage = 'Google Client ID not configured on server';
+    }
+    
+    res.status(500).json({ success: false, message: errorMessage });
   }
 };

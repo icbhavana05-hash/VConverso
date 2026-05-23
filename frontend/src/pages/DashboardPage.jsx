@@ -43,10 +43,9 @@ const DashboardPage = () => {
   const [error, setError] = useState('');
   
   // Interactive Daily Challenge States
-  const [challengeClaimed, setChallengeClaimed] = useState(false);
-  const [bonusXP, setBonusXP] = useState(0);
+  const [dailyChallenge, setDailyChallenge] = useState({ claimed: false, total_bonus_xp: 0, next_claim_at: null });
   const [showConfetti, setShowConfetti] = useState(false);
-  
+
   // UI States
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -82,6 +81,7 @@ const DashboardPage = () => {
     try {
       const response = await api.get(`/progress/${user.user_id}`);
       setData(response.data.analytics);
+      setDailyChallenge(response.data.analytics.daily_challenge || { claimed: false, total_bonus_xp: 0, next_claim_at: null });
     } catch (err) {
       console.error('[Dashboard API Error]:', err);
       setError('Failed to establish connection to premium syllabus networks. Ensure database services are running.');
@@ -112,8 +112,6 @@ const DashboardPage = () => {
     try {
       await api.post('/languages/enroll', { language_id: languageId });
       await fetchDashboardData();
-      // Reset daily challenge mockup claim when a new language is enrolled
-      setChallengeClaimed(false);
     } catch (err) {
       console.error('[Enroll Drawer Error]:', err);
       alert(err.response?.data?.message || 'Failed to enroll in selected language.');
@@ -137,15 +135,23 @@ const DashboardPage = () => {
     }
   };
 
-  // Claim Daily Challenge simulation
-  const claimDailyChallenge = () => {
-    if (challengeClaimed) return;
-    setChallengeClaimed(true);
-    setBonusXP(150);
-    setShowConfetti(true);
-    setTimeout(() => {
-      setShowConfetti(false);
-    }, 4500);
+  // Claim Daily Challenge and persist via backend
+  const claimDailyChallenge = async () => {
+    if (dailyChallenge.claimed) return;
+    try {
+      const response = await api.post('/progress/daily-challenge/claim');
+      if (response.data?.daily_challenge) {
+        setDailyChallenge(response.data.daily_challenge);
+      }
+      setShowConfetti(true);
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 4500);
+      await fetchDashboardData();
+    } catch (err) {
+      console.error('[Daily Challenge Claim Error]:', err);
+      alert(err.response?.data?.message || 'Failed to claim daily challenge XP.');
+    }
   };
 
   // Theming definitions based on course name
@@ -232,7 +238,7 @@ const DashboardPage = () => {
   } = data;
 
   // Calculate dynamic classroom metrics
-  const totalClassroomXP = (languages?.reduce((sum, lang) => sum + (lang.total_score || 0), 0) || 0) + bonusXP;
+  const totalClassroomXP = (languages?.reduce((sum, lang) => sum + (lang.total_score || 0), 0) || 0) + (dailyChallenge?.total_bonus_xp || 0);
   const isPolyglotLegend = enrolledLanguages.length >= 2;
 
   return (
@@ -636,19 +642,24 @@ const DashboardPage = () => {
                 </div>
               </div>
 
+              <div className="tw-flex tw-items-center tw-justify-between tw-mb-3 tw-gap-2">
+                <span className="tw-text-xs tw-font-semibold tw-text-v-brown-dark">Total Bonus XP</span>
+                <span className="tw-text-xs tw-font-bold tw-text-v-brown-dark">{dailyChallenge.total_bonus_xp || 0} XP</span>
+              </div>
+
               {/* Claim Challenge Button with click microinteraction */}
               <motion.button
                 onClick={claimDailyChallenge}
-                disabled={challengeClaimed}
-                whileHover={!challengeClaimed ? { scale: 1.02 } : {}}
-                whileTap={!challengeClaimed ? { scale: 0.98 } : {}}
+                disabled={dailyChallenge.claimed}
+                whileHover={!dailyChallenge.claimed ? { scale: 1.02 } : {}}
+                whileTap={!dailyChallenge.claimed ? { scale: 0.98 } : {}}
                 className={`tw-w-full tw-py-3 tw-rounded-xl tw-font-bold tw-text-xs tw-transition-all tw-flex tw-items-center tw-justify-center tw-gap-1.5 ${
-                  challengeClaimed
+                  dailyChallenge.claimed
                     ? 'tw-bg-v-bg-sec tw-text-v-text-muted tw-border tw-border-v-brown-med/15 tw-cursor-default'
                     : 'tw-bg-gradient-to-r tw-from-v-brown-dark tw-to-v-brown-med hover:tw-from-v-brown-hover hover:tw-to-v-brown-dark tw-text-white tw-shadow-sm'
                 }`}
               >
-                {challengeClaimed ? (
+                {dailyChallenge.claimed ? (
                   <>
                     <CheckCircle className="tw-w-3.5 tw-h-3.5 tw-text-v-brown-med" />
                     XP Claimed (+150 XP Active)
@@ -660,6 +671,12 @@ const DashboardPage = () => {
                   </>
                 )}
               </motion.button>
+
+              <p className="tw-text-[11px] tw-text-v-text-sec tw-mt-3">
+                {dailyChallenge.claimed
+                  ? `Next claim available at ${dailyChallenge.next_claim_at ? new Date(dailyChallenge.next_claim_at).toLocaleString() : 'soon'}.`
+                  : 'Claim once every 24 hours to accumulate bonus XP.'}
+              </p>
             </div>
 
           </div>

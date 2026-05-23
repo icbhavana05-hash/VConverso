@@ -55,6 +55,8 @@ async function initDb() {
 
       dbType = 'mysql';
 
+      await ensureMysqlDailyChallengeTable();
+
       // Check if tables exist, and seed if they are empty
       await seedMysqlIfEmpty();
       return;
@@ -130,6 +132,46 @@ function sqliteQuery(sql, params = []) {
       });
     }
   });
+}
+
+/**
+ * Ensure MySQL DailyChallenge table exists for persisted bonus XP storage
+ */
+async function ensureMysqlDailyChallengeTable() {
+  try {
+    await mysqlPool.query(`
+      CREATE TABLE IF NOT EXISTS DailyChallenge (
+        challenge_id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        total_bonus_xp INT NOT NULL DEFAULT 0,
+        last_claimed_at DATETIME NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+        UNIQUE KEY user_unique (user_id)
+      )
+    `);
+
+    // Migrate legacy columns if the table exists from older schema versions.
+    const [bonusColumn] = await mysqlPool.query("SHOW COLUMNS FROM DailyChallenge LIKE 'bonus_xp'");
+    if (bonusColumn.length > 0) {
+      const [totalBonusColumn] = await mysqlPool.query("SHOW COLUMNS FROM DailyChallenge LIKE 'total_bonus_xp'");
+      if (totalBonusColumn.length === 0) {
+        await mysqlPool.query('ALTER TABLE DailyChallenge ADD COLUMN total_bonus_xp INT NOT NULL DEFAULT 0');
+        await mysqlPool.query('UPDATE DailyChallenge SET total_bonus_xp = bonus_xp');
+      }
+    }
+
+    const [lastClaimedColumn] = await mysqlPool.query("SHOW COLUMNS FROM DailyChallenge LIKE 'last_claimed_at'");
+    if (lastClaimedColumn.length === 0) {
+      await mysqlPool.query('ALTER TABLE DailyChallenge ADD COLUMN last_claimed_at DATETIME NULL');
+      const [claimedDateColumn] = await mysqlPool.query("SHOW COLUMNS FROM DailyChallenge LIKE 'claimed_date'");
+      if (claimedDateColumn.length > 0) {
+        await mysqlPool.query('UPDATE DailyChallenge SET last_claimed_at = claimed_date');
+      }
+    }
+  } catch (err) {
+    console.error('[Database ERROR] Could not ensure DailyChallenge table:', err.message);
+  }
 }
 
 /**
@@ -269,6 +311,34 @@ function initSQLiteSchemaAndSeed() {
           UNIQUE (user_id, language_id)
         );
       `);
+
+      sqliteDb.run(`
+        CREATE TABLE IF NOT EXISTS DailyChallenge (
+          challenge_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          total_bonus_xp INTEGER NOT NULL DEFAULT 0,
+          last_claimed_at TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES User(user_id) ON DELETE CASCADE,
+          UNIQUE (user_id)
+        );
+      `);
+
+      sqliteDb.all('PRAGMA table_info(DailyChallenge);', [], (pragmaErr, cols) => {
+        if (!pragmaErr && Array.isArray(cols)) {
+          const names = cols.map(c => c.name);
+          if (!names.includes('total_bonus_xp')) {
+            sqliteDb.run('ALTER TABLE DailyChallenge ADD COLUMN total_bonus_xp INTEGER NOT NULL DEFAULT 0;');
+          }
+          if (!names.includes('last_claimed_at')) {
+            sqliteDb.run('ALTER TABLE DailyChallenge ADD COLUMN last_claimed_at TEXT;');
+          }
+          if (names.includes('bonus_xp') && names.includes('claimed_date') && !names.includes('total_bonus_xp')) {
+            sqliteDb.run('UPDATE DailyChallenge SET total_bonus_xp = bonus_xp WHERE total_bonus_xp = 0;');
+            sqliteDb.run('UPDATE DailyChallenge SET last_claimed_at = claimed_date WHERE last_claimed_at IS NULL;');
+          }
+        }
+      });
 
       // Check if languages exist
       sqliteDb.get("SELECT COUNT(*) as count FROM Language", [], async (err, row) => {
