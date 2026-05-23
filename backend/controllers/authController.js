@@ -1,8 +1,11 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const { OAuth2Client } = require('google-auth-library');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'language_learning_jwt_secret_token_key_2026';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 /**
  * Register a new user
@@ -154,5 +157,55 @@ exports.login = async (req, res) => {
       success: false, 
       message: 'Server error during login. Please try again.' 
     });
+  }
+};
+
+/**
+ * Google OAuth sign-in
+ * POST /api/auth/google
+ * Body: { idToken }
+ */
+exports.googleAuth = async (req, res) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ success: false, message: 'Missing idToken' });
+  }
+
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID || undefined });
+    const payload = ticket.getPayload();
+
+    const email = payload.email;
+    const name = payload.name || '';
+
+    // Check existing user
+    const [users] = await db.query('SELECT * FROM User WHERE email = ?', [email]);
+
+    let userId;
+
+    if (users && users.length > 0) {
+      userId = users[0].user_id;
+    } else {
+      // Create a new user with empty password (Google users won't use password login)
+      const [result] = await db.query('INSERT INTO User (name, email, password) VALUES (?, ?, ?)', [name, email, '']);
+      userId = result.insertId;
+    }
+
+    const token = jwt.sign({ user_id: userId, name, email }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.status(200).json({
+      success: true,
+      message: 'Google authentication successful',
+      token,
+      user: {
+        user_id: userId,
+        name,
+        email
+      }
+    });
+  } catch (err) {
+    console.error('[Google Auth Error]:', err.message);
+    res.status(500).json({ success: false, message: 'Google authentication failed' });
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -10,9 +10,11 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
   
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,6 +35,72 @@ const LoginPage = () => {
       setError(result.message);
     }
   };
+
+  const handleGoogleCredentialResponse = async (response) => {
+    if (!response?.credential) {
+      setError('Google sign-in failed. Please try again.');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+    const result = await loginWithGoogle(response.credential);
+    setLoading(false);
+
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.message);
+    }
+  };
+
+  useEffect(() => {
+    if (!googleClientId) {
+      return;
+    }
+
+    const initializeGoogle = () => {
+      if (!window.google?.accounts?.id) {
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleGoogleCredentialResponse,
+      });
+
+      window.google.accounts.id.renderButton(
+        document.getElementById('googleSignInButton'),
+        {
+          theme: 'filled_blue',
+          size: 'large',
+          width: '100%',
+          shape: 'pill',
+          text: 'signin_with',
+        }
+      );
+
+      setGoogleReady(true);
+    };
+
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogle;
+    document.body.appendChild(script);
+
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, [googleClientId]);
 
   return (
     <div className="tw-relative tw-w-full tw-min-h-screen tw-bg-v-bg tw-flex tw-flex-col tw-justify-center tw-items-center tw-text-v-text-prim tw-py-12 tw-px-4">
@@ -170,7 +238,19 @@ const LoginPage = () => {
             </motion.button>
           </form>
 
-          {/* Link redirect */}
+          {googleClientId && (
+            <div className="tw-mt-6 tw-w-full">
+              <div id="googleSignInButton" className="tw-w-full" />
+            </div>
+          )}
+
+          {!googleClientId && (
+            <div className="tw-mt-6 tw-text-xs tw-text-zinc-500 tw-text-center">
+              Google sign-in is disabled until you add <code className="tw-bg-zinc-950 tw-px-2 tw-rounded">VITE_GOOGLE_CLIENT_ID</code> to your frontend environment.
+            </div>
+          )}
+
+          {/* Link redirect matching mockup */}
           <div className="tw-text-center tw-mt-8">
             <span className="tw-text-xs tw-text-v-text-muted">New to VConverso? </span>
             <Link to="/register" className="tw-text-xs tw-text-v-brown-dark hover:tw-text-v-brown-hover tw-font-semibold tw-no-underline">

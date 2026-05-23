@@ -11,5 +11,9 @@ router.post('/register', authController.register);
 // @desc    Login user & get token
 // @access  Public
 router.post('/login', authController.login);
+// @route   POST /api/auth/google
+// @desc    Authenticate / register user via Google ID token
+// @access  Public
+router.post('/google', authController.googleAuth);
 
 module.exports = router;
