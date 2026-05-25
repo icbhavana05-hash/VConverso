@@ -47,7 +47,7 @@ exports.getUserProgress = async (req, res) => {
     );
     const averageScore = avgStats[0].avg_score ? parseFloat(parseFloat(avgStats[0].avg_score).toFixed(2)) : 0.0;
 
-    // 4. Overall Progress percentage (excluding English)
+    // 4. Overall Progress percentage (prefer non-English languages, but fall back to any language if needed)
     const [progressStats] = await db.query(
       `SELECT AVG(s.progress_percentage) as avg_progress 
        FROM Scores s 
@@ -55,7 +55,19 @@ exports.getUserProgress = async (req, res) => {
        WHERE s.user_id = ? AND LOWER(l.language_name) != 'english'`,
       [user_id]
     );
-    const overallProgress = progressStats[0].avg_progress ? parseFloat(parseFloat(progressStats[0].avg_progress).toFixed(2)) : 0.0;
+    let overallProgress = progressStats[0].avg_progress;
+
+    if (overallProgress === null || overallProgress === undefined) {
+      const [fallbackProgress] = await db.query(
+        `SELECT AVG(progress_percentage) as avg_progress 
+         FROM Scores 
+         WHERE user_id = ?`,
+        [user_id]
+      );
+      overallProgress = fallbackProgress[0].avg_progress;
+    }
+
+    overallProgress = overallProgress ? parseFloat(parseFloat(overallProgress).toFixed(2)) : 0.0;
 
     // 5. Language-wise performance details (excluding English)
     const [languagePerformance] = await db.query(
@@ -72,6 +84,38 @@ exports.getUserProgress = async (req, res) => {
       ORDER BY l.language_id ASC`,
       [user_id]
     );
+
+    const [dailyChallengeRows] = await db.query(
+      `SELECT total_bonus_xp, last_claimed_at
+       FROM DailyChallenge
+       WHERE user_id = ?
+       LIMIT 1`,
+      [user_id]
+    );
+
+    let dailyChallenge = {
+      claimed: false,
+      total_bonus_xp: 0,
+      last_claimed_at: null,
+      next_claim_at: null
+    };
+
+    if (dailyChallengeRows && dailyChallengeRows.length > 0) {
+      const row = dailyChallengeRows[0];
+      const lastClaimedAt = row.last_claimed_at ? new Date(row.last_claimed_at) : null;
+      const now = new Date();
+      const timeSinceClaimMs = lastClaimedAt ? now.getTime() - lastClaimedAt.getTime() : Number.MAX_SAFE_INTEGER;
+      const cooldownMs = 24 * 60 * 60 * 1000;
+      const claimed = lastClaimedAt && timeSinceClaimMs < cooldownMs;
+      const nextClaimAt = claimed ? new Date(lastClaimedAt.getTime() + cooldownMs).toISOString() : null;
+
+      dailyChallenge = {
+        claimed,
+        total_bonus_xp: row.total_bonus_xp || 0,
+        last_claimed_at: row.last_claimed_at,
+        next_claim_at: nextClaimAt
+      };
+    }
 
     // 6. Recent quiz attempts (excluding English)
     const [recentAttempts] = await db.query(
@@ -101,6 +145,7 @@ exports.getUserProgress = async (req, res) => {
         average_score: averageScore,
         overall_progress_percentage: overallProgress,
         languages: languagePerformance,
+        daily_challenge: dailyChallenge,
         recent_activity: recentAttempts
       }
     });
@@ -110,6 +155,95 @@ exports.getUserProgress = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve progress data.'
+    });
+  }
+};
+
+/**
+ * Claim the daily XP challenge for the current user and persist the result.
+ * POST /api/progress/daily-challenge/claim
+ */
+exports.claimDailyChallenge = async (req, res) => {
+  const userId = req.user.user_id;
+  const bonusXp = 150;
+
+  try {
+    const [existingRows] = await db.query(
+      'SELECT total_bonus_xp, last_claimed_at FROM DailyChallenge WHERE user_id = ? LIMIT 1',
+      [userId]
+    );
+
+    const now = new Date();
+    const cooldownMs = 24 * 60 * 60 * 1000;
+    let nextClaimAt = null;
+
+    if (existingRows && existingRows.length > 0) {
+      const existing = existingRows[0];
+      const lastClaimedAt = existing.last_claimed_at ? new Date(existing.last_claimed_at) : null;
+      const timeSinceLastClaim = lastClaimedAt ? now.getTime() - lastClaimedAt.getTime() : Number.MAX_SAFE_INTEGER;
+
+      if (lastClaimedAt && timeSinceLastClaim < cooldownMs) {
+        nextClaimAt = new Date(lastClaimedAt.getTime() + cooldownMs).toISOString();
+        return res.status(400).json({
+          success: false,
+          message: `Daily XP can only be claimed once every 24 hours. Next claim available at ${nextClaimAt}.`,
+          daily_challenge: {
+            claimed: true,
+            total_bonus_xp: existing.total_bonus_xp || 0,
+            last_claimed_at: existing.last_claimed_at,
+            next_claim_at: nextClaimAt
+          }
+        });
+      }
+
+      const newTotal = (existing.total_bonus_xp || 0) + bonusXp;
+      await db.query(
+        'UPDATE DailyChallenge SET total_bonus_xp = ?, last_claimed_at = ? WHERE user_id = ?',
+        [newTotal, now.toISOString().replace('T', ' ').slice(0, 19), userId]
+      );
+
+      nextClaimAt = new Date(now.getTime() + cooldownMs).toISOString();
+      return res.status(200).json({
+        success: true,
+        message: 'Daily challenge claimed successfully.',
+        daily_challenge: {
+          claimed: true,
+          total_bonus_xp: newTotal,
+          last_claimed_at: now.toISOString(),
+          next_claim_at: nextClaimAt
+        }
+      });
+    }
+
+    const totalXp = bonusXp;
+    if (db.getDbType() === 'mysql') {
+      await db.query(
+        'INSERT INTO DailyChallenge (user_id, total_bonus_xp, last_claimed_at) VALUES (?, ?, ?)',
+        [userId, totalXp, now.toISOString().replace('T', ' ').slice(0, 19)]
+      );
+    } else {
+      await db.query(
+        'INSERT INTO DailyChallenge (user_id, total_bonus_xp, last_claimed_at) VALUES (?, ?, ?)',
+        [userId, totalXp, now.toISOString()]
+      );
+    }
+
+    nextClaimAt = new Date(now.getTime() + cooldownMs).toISOString();
+    return res.status(200).json({
+      success: true,
+      message: 'Daily challenge claimed successfully.',
+      daily_challenge: {
+        claimed: true,
+        total_bonus_xp: totalXp,
+        last_claimed_at: now.toISOString(),
+        next_claim_at: nextClaimAt
+      }
+    });
+  } catch (err) {
+    console.error('[Claim Daily Challenge Error]:', err.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to claim the daily challenge.'
     });
   }
 };
